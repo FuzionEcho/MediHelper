@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,7 @@ import { processChatMessage } from "@/app/actions/process-chat-message"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { debounce } from "@/utils/debounce"
 
 interface Message {
   content: string
@@ -44,6 +45,7 @@ export default function ChatbotInterface() {
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const [transcript, setTranscript] = useState("")
   const [isProcessingCommand, setIsProcessingCommand] = useState(false)
+  const [isStartingOrStopping, setIsStartingOrStopping] = useState(false) // Prevent concurrency issues
   const recognitionRef = useRef<any>(null)
 
   // Quick navigation links
@@ -332,34 +334,38 @@ export default function ChatbotInterface() {
     return result
   }
 
-  // Function to toggle voice input
-  const toggleVoiceInput = () => {
-    if (isListening) {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop()
-        } catch (error) {
-          console.error("Error stopping speech recognition:", error)
-          // Force reset the listening state if stopping fails
+  // Debounced function to toggle voice input
+  const debouncedToggleVoiceInput = useCallback(
+    debounce(() => {
+      if (!isStartingOrStopping) {
+        setIsStartingOrStopping(true)
+        if (isListening) {
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.stop()
+            } catch (error) {
+              console.error("Error stopping speech recognition:", error)
+            }
+          }
           setIsListening(false)
           setTranscript("")
+        } else {
+          setVoiceError(null)
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.start()
+            } catch (error) {
+              console.error("Error starting speech recognition:", error)
+              setVoiceError("Failed to start speech recognition. Please try again or use text input instead.")
+              setIsListening(false)
+            }
+          }
         }
+        setIsStartingOrStopping(false)
       }
-      setIsListening(false)
-      setTranscript("")
-    } else {
-      setVoiceError(null)
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.start()
-        } catch (error) {
-          console.error("Error starting speech recognition:", error)
-          setVoiceError("Failed to start speech recognition. Please try again or use text input instead.")
-          setIsListening(false)
-        }
-      }
-    }
-  }
+    }, 300),
+    [isListening, isStartingOrStopping],
+  )
 
   return (
     <Card className="w-full h-full flex flex-col border-0 rounded-none">
@@ -455,8 +461,8 @@ export default function ChatbotInterface() {
             <Button
               type="button"
               size="icon"
-              onClick={toggleVoiceInput}
-              disabled={isLoading}
+              onClick={debouncedToggleVoiceInput}
+              disabled={isLoading || isStartingOrStopping}
               className={`${isListening ? "bg-red-500 hover:bg-red-600" : "bg-blue-600 hover:bg-blue-700"} text-white`}
             >
               {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
