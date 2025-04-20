@@ -2,7 +2,21 @@
 
 import { revalidatePath } from "next/cache"
 
-// Define the transportation data structure
+// Define the TransportationLog interface
+interface TransportationLog {
+  id: string
+  createdAt: Date
+  transportationData: TransportationData
+  status: "scheduled" | "completed" | "canceled"
+}
+
+// This is a mock database for demonstration purposes
+const transportationLogs: TransportationLog[] = []
+
+// This is a partial update to the existing file
+// We'll only modify the relevant parts to store coordinates
+
+// Update the TransportationData interface
 export interface TransportationData {
   appointmentDate: Date
   appointmentTime: string
@@ -11,22 +25,11 @@ export interface TransportationData {
   pickupAddress: string
   transportType: string
   specialNeeds?: string
+  pickupCoordinates?: { lat: number; lng: number }
+  destinationCoordinates?: { lat: number; lng: number }
 }
 
-// Define the transportation log structure
-export interface TransportationLog {
-  id: string
-  createdAt: Date
-  transportationData: TransportationData
-  status: "scheduled" | "completed" | "canceled"
-}
-
-// In-memory storage for transportation logs (in a real app, this would be a database)
-const transportationLogs: TransportationLog[] = []
-
-/**
- * Saves a transportation log
- */
+// Update the saveTransportation function to handle coordinates
 export async function saveTransportation(data: TransportationData) {
   try {
     // Validate the request
@@ -34,6 +37,31 @@ export async function saveTransportation(data: TransportationData) {
       return {
         success: false,
         error: "Missing required transportation data",
+      }
+    }
+
+    // If coordinates aren't provided, try to geocode the addresses
+    if (!data.pickupCoordinates && data.pickupAddress) {
+      try {
+        const { geocodeAddress } = await import("./geocode-address")
+        const result = await geocodeAddress(data.pickupAddress)
+        if (result.success && result.data) {
+          data.pickupCoordinates = result.data.location
+        }
+      } catch (error) {
+        console.error("Error geocoding pickup address:", error)
+      }
+    }
+
+    if (!data.destinationCoordinates && data.location) {
+      try {
+        const { geocodeAddress } = await import("./geocode-address")
+        const result = await geocodeAddress(data.location)
+        if (result.success && result.data) {
+          data.destinationCoordinates = result.data.location
+        }
+      } catch (error) {
+        console.error("Error geocoding destination address:", error)
       }
     }
 
@@ -73,12 +101,8 @@ export async function saveTransportation(data: TransportationData) {
  */
 export async function getAllTransportationLogs() {
   try {
-    // Sort logs by appointment date (newest first)
-    const sortedLogs = [...transportationLogs].sort(
-      (a, b) =>
-        new Date(b.transportationData.appointmentDate).getTime() -
-        new Date(a.transportationData.appointmentDate).getTime(),
-    )
+    // Sort transportation logs by creation date (newest first)
+    const sortedLogs = [...transportationLogs].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 
     return {
       success: true,
@@ -94,38 +118,11 @@ export async function getAllTransportationLogs() {
 }
 
 /**
- * Gets a transportation log by ID
- */
-export async function getTransportationById(id: string) {
-  try {
-    const log = transportationLogs.find((l) => l.id === id)
-
-    if (!log) {
-      return {
-        success: false,
-        error: "Transportation log not found",
-      }
-    }
-
-    return {
-      success: true,
-      data: log,
-    }
-  } catch (error) {
-    console.error("Error getting transportation log:", error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
-    }
-  }
-}
-
-/**
- * Updates a transportation log status
+ * Updates the status of a transportation log
  */
 export async function updateTransportationStatus(id: string, status: "scheduled" | "completed" | "canceled") {
   try {
-    const logIndex = transportationLogs.findIndex((l) => l.id === id)
+    const logIndex = transportationLogs.findIndex((log) => log.id === id)
 
     if (logIndex === -1) {
       return {
@@ -134,12 +131,13 @@ export async function updateTransportationStatus(id: string, status: "scheduled"
       }
     }
 
-    // Update the status
-    transportationLogs[logIndex].status = status
+    transportationLogs[logIndex] = {
+      ...transportationLogs[logIndex],
+      status,
+    }
 
-    // Revalidate the relevant pages
-    revalidatePath("/dashboard")
     revalidatePath("/transportation")
+    revalidatePath("/dashboard")
 
     return {
       success: true,

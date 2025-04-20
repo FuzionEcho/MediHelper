@@ -65,10 +65,10 @@ export default function FloatingChatButton() {
                 <MessageCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="font-medium text-sm">Need help navigating?</p>
+                <p className="font-medium text-sm">Voice commands available!</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  I'm MediHelper! Click to ask me about bills, appointments, or insurance. You can also use voice
-                  commands!
+                  Try saying "Go to appointments" or "Show me my bills" to navigate the app with your voice. Voice may
+                  not work in all browsers.
                 </p>
               </div>
             </div>
@@ -84,7 +84,12 @@ export default function FloatingChatButton() {
               onClick={handleButtonClick}
               className="h-14 w-14 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
             >
-              <MessageCircle className="h-6 w-6" />
+              <div className="relative">
+                <MessageCircle className="h-6 w-6" />
+                <div className="absolute -top-1 -right-1 bg-red-500 rounded-full w-3 h-3 flex items-center justify-center">
+                  <Mic className="h-2 w-2 text-white" />
+                </div>
+              </div>
             </Button>
           </motion.div>
         </SheetTrigger>
@@ -96,7 +101,9 @@ export default function FloatingChatButton() {
                 <h2 className="text-lg font-semibold">MediHelper</h2>
                 <div className="bg-blue-500 text-xs px-2 py-0.5 rounded-full flex items-center">
                   <Mic className="h-3 w-3 mr-1" />
-                  Voice Enabled
+                  {typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition)
+                    ? "Voice Enabled"
+                    : "Text Only"}
                 </div>
               </div>
               <Button

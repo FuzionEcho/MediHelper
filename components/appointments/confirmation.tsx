@@ -1,16 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import { Check, CalendarIcon, Car, MapPin, Loader2, AlertCircle, ExternalLink } from "lucide-react"
+import { Check, CalendarIcon, Car, MapPin, Loader2, AlertCircle, ExternalLink, Navigation } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { format, addMinutes } from "date-fns"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { addAppointmentToCalendar } from "@/app/actions/calendar-integration"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { geocodeAddress } from "@/app/actions/geocode-address"
+import { generateMapUrl } from "@/app/actions/generate-map-url"
+import { useEffect } from "react"
 
 interface TransportDetails {
   pickupAddress: string
   transportType: string
+  pickupCoordinates?: { lat: number; lng: number }
 }
 
 interface AppointmentData {
@@ -19,6 +24,7 @@ interface AppointmentData {
   appointmentType: string
   provider: string
   location: string
+  destinationCoordinates?: { lat: number; lng: number }
   transportNeeded: boolean
   transportDetails?: TransportDetails
 }
@@ -35,6 +41,12 @@ export function AppointmentConfirmation({ appointmentData, onReset }: Appointmen
     error?: string
     eventLink?: string
   } | null>(null)
+  const [activeTab, setActiveTab] = useState("details")
+  const [isLoadingPickupMap, setIsLoadingPickupMap] = useState(false)
+  const [isLoadingDestinationMap, setIsLoadingDestinationMap] = useState(false)
+  const [pickupMapUrl, setPickupMapUrl] = useState<string | null>(null)
+  const [destinationMapUrl, setDestinationMapUrl] = useState<string | null>(null)
+  const [mapError, setMapError] = useState<string | null>(null)
 
   // Format appointment type for display
   const getAppointmentTypeDisplay = (type: string) => {
@@ -74,6 +86,79 @@ export function AppointmentConfirmation({ appointmentData, onReset }: Appointmen
     return appointmentDate
   }
 
+  // Load maps for pickup and destination locations
+  useEffect(() => {
+    const loadMaps = async () => {
+      setMapError(null)
+
+      // Check if Google Maps API key is available
+      if (typeof window !== "undefined" && window.googleMapsApiKeyMissing) {
+        setMapError("Google Maps API key is not configured. Map previews are unavailable.")
+        return
+      }
+
+      // Load destination map
+      if (appointmentData.location) {
+        setIsLoadingDestinationMap(true)
+        try {
+          // If we already have coordinates, use them
+          if (appointmentData.destinationCoordinates) {
+            const { lat, lng } = appointmentData.destinationCoordinates
+            const result = await generateMapUrl(lat, lng, "red")
+            if (result.success) {
+              setDestinationMapUrl(result.mapUrl)
+            }
+          } else {
+            // Otherwise geocode the address
+            const result = await geocodeAddress(appointmentData.location)
+            if (result.success && result.data) {
+              const { lat, lng } = result.data.location
+              const mapResult = await generateMapUrl(lat, lng, "red")
+              if (mapResult.success) {
+                setDestinationMapUrl(mapResult.mapUrl)
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error loading destination map:", error)
+        } finally {
+          setIsLoadingDestinationMap(false)
+        }
+      }
+
+      // Load pickup map if transportation is needed
+      if (appointmentData.transportNeeded && appointmentData.transportDetails?.pickupAddress) {
+        setIsLoadingPickupMap(true)
+        try {
+          // If we already have coordinates, use them
+          if (appointmentData.transportDetails.pickupCoordinates) {
+            const { lat, lng } = appointmentData.transportDetails.pickupCoordinates
+            const result = await generateMapUrl(lat, lng, "green")
+            if (result.success) {
+              setPickupMapUrl(result.mapUrl)
+            }
+          } else {
+            // Otherwise geocode the address
+            const result = await geocodeAddress(appointmentData.transportDetails.pickupAddress)
+            if (result.success && result.data) {
+              const { lat, lng } = result.data.location
+              const mapResult = await generateMapUrl(lat, lng, "green")
+              if (mapResult.success) {
+                setPickupMapUrl(mapResult.mapUrl)
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error loading pickup map:", error)
+        } finally {
+          setIsLoadingPickupMap(false)
+        }
+      }
+    }
+
+    loadMaps()
+  }, [appointmentData])
+
   // Generate Google Calendar link
   const handleAddToCalendar = async () => {
     setIsAddingToCalendar(true)
@@ -85,13 +170,19 @@ export function AppointmentConfirmation({ appointmentData, onReset }: Appointmen
 
       // Create appointment title and description
       const title = `Medical Appointment: ${getAppointmentTypeDisplay(appointmentData.appointmentType)}`
-      let description = `Appointment at ${appointmentData.provider}\n`
-      description += `Type: ${getAppointmentTypeDisplay(appointmentData.appointmentType)}\n`
+      let description = `Appointment at ${appointmentData.provider}
+`
+      description += `Type: ${getAppointmentTypeDisplay(appointmentData.appointmentType)}
+`
 
       if (appointmentData.transportNeeded && appointmentData.transportDetails) {
-        description += `\nTransportation Details:\n`
-        description += `Pickup Address: ${appointmentData.transportDetails.pickupAddress}\n`
-        description += `Transport Type: ${appointmentData.transportDetails.transportType}\n`
+        description += `
+Transportation Details:
+`
+        description += `Pickup Address: ${appointmentData.transportDetails.pickupAddress}
+`
+        description += `Transport Type: ${appointmentData.transportDetails.transportType}
+`
       }
 
       // Call the server action to generate a Google Calendar link
@@ -128,80 +219,177 @@ export function AppointmentConfirmation({ appointmentData, onReset }: Appointmen
         <CardDescription>Your appointment has been successfully scheduled</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="rounded-lg border p-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Date & Time</p>
-              <p className="font-medium">
-                {format(appointmentData.date, "EEEE, MMMM d, yyyy")} at {appointmentData.time}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Appointment Type</p>
-              <p className="font-medium">{getAppointmentTypeDisplay(appointmentData.appointmentType)}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Provider</p>
-              <p className="font-medium">{appointmentData.provider}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Location</p>
-              <div className="flex items-center gap-1">
-                <MapPin className="h-4 w-4 text-gray-400" />
-                <p>{appointmentData.location}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="location">Location</TabsTrigger>
+            {appointmentData.transportNeeded && <TabsTrigger value="transportation">Transportation</TabsTrigger>}
+          </TabsList>
 
-        {appointmentData.transportNeeded && appointmentData.transportDetails && (
-          <div className="rounded-lg border p-4">
-            <h3 className="mb-2 flex items-center gap-2 font-medium">
-              <Car className="h-5 w-5 text-teal-600" />
-              Transportation Details
-            </h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Pickup Time</p>
-                <p className="font-medium">
-                  {format(addMinutes(getAppointmentDateTime(), -45), "h:mm a")} (45 minutes before appointment)
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Transportation Type</p>
-                <p className="font-medium">{appointmentData.transportDetails.transportType}</p>
-              </div>
-              <div className="sm:col-span-2">
-                <p className="text-sm font-medium text-gray-500">Pickup Address</p>
-                <p className="font-medium">{appointmentData.transportDetails.pickupAddress}</p>
+          <TabsContent value="details" className="space-y-4 pt-4">
+            <div className="rounded-lg border p-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Date & Time</p>
+                  <p className="font-medium">
+                    {format(appointmentData.date, "EEEE, MMMM d, yyyy")} at {appointmentData.time}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Appointment Type</p>
+                  <p className="font-medium">{getAppointmentTypeDisplay(appointmentData.appointmentType)}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Provider</p>
+                  <p className="font-medium">{appointmentData.provider}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Location</p>
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4 text-gray-400" />
+                    <p>{appointmentData.location}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
 
-        <div className="rounded-lg border p-4 bg-blue-50">
-          <h3 className="mb-2 font-medium">Appointment Reminders</h3>
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 h-4 w-4 rounded-full bg-blue-200 text-center text-xs font-bold text-blue-700">
-                !
-              </span>
-              <span>Please arrive 15 minutes before your scheduled appointment time.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 h-4 w-4 rounded-full bg-blue-200 text-center text-xs font-bold text-blue-700">
-                !
-              </span>
-              <span>Bring your insurance card and a valid photo ID.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 h-4 w-4 rounded-full bg-blue-200 text-center text-xs font-bold text-blue-700">
-                !
-              </span>
-              <span>Bring a list of current medications and any relevant medical records.</span>
-            </li>
-          </ul>
-        </div>
+            <div className="rounded-lg border p-4 bg-blue-50">
+              <h3 className="mb-2 font-medium">Appointment Reminders</h3>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 h-4 w-4 rounded-full bg-blue-200 text-center text-xs font-bold text-blue-700">
+                    !
+                  </span>
+                  <span>Please arrive 15 minutes before your scheduled appointment time.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 h-4 w-4 rounded-full bg-blue-200 text-center text-xs font-bold text-blue-700">
+                    !
+                  </span>
+                  <span>Bring your insurance card and a valid photo ID.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 h-4 w-4 rounded-full bg-blue-200 text-center text-xs font-bold text-blue-700">
+                    !
+                  </span>
+                  <span>Bring a list of current medications and any relevant medical records.</span>
+                </li>
+              </ul>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="location" className="space-y-4 pt-4">
+            <div className="rounded-lg border p-4">
+              <h3 className="mb-3 font-medium flex items-center">
+                <MapPin className="h-5 w-5 mr-2 text-red-500" />
+                Appointment Location
+              </h3>
+              <p className="mb-3">{appointmentData.location}</p>
+
+              {mapError ? (
+                <Alert variant="warning" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{mapError}</AlertDescription>
+                </Alert>
+              ) : isLoadingDestinationMap ? (
+                <div className="h-[300px] w-full bg-gray-100 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                </div>
+              ) : destinationMapUrl ? (
+                <div className="relative">
+                  <img
+                    src={destinationMapUrl || "/placeholder.svg"}
+                    alt="Map showing appointment location"
+                    className="w-full h-[300px] object-cover rounded-md"
+                  />
+                  <div className="absolute bottom-3 right-3">
+                    <Button asChild size="sm" className="bg-white text-black hover:bg-gray-100 shadow-md">
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(appointmentData.location)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center"
+                      >
+                        <Navigation className="mr-2 h-4 w-4" />
+                        Get Directions
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-[300px] w-full bg-gray-100 flex items-center justify-center">
+                  <p className="text-gray-500">Map preview not available</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {appointmentData.transportNeeded && appointmentData.transportDetails && (
+            <TabsContent value="transportation" className="space-y-4 pt-4">
+              <div className="rounded-lg border p-4">
+                <h3 className="mb-2 flex items-center gap-2 font-medium">
+                  <Car className="h-5 w-5 text-teal-600" />
+                  Transportation Details
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2 mb-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Pickup Time</p>
+                    <p className="font-medium">
+                      {format(addMinutes(getAppointmentDateTime(), -45), "h:mm a")} (45 minutes before appointment)
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Transportation Type</p>
+                    <p className="font-medium">{appointmentData.transportDetails.transportType}</p>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <p className="text-sm font-medium text-gray-500">Pickup Address</p>
+                    <p className="font-medium flex items-center">
+                      <MapPin className="h-4 w-4 mr-1 text-green-500" />
+                      {appointmentData.transportDetails.pickupAddress}
+                    </p>
+                  </div>
+                </div>
+
+                {mapError ? (
+                  <Alert variant="warning" className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{mapError}</AlertDescription>
+                  </Alert>
+                ) : isLoadingPickupMap ? (
+                  <div className="h-[300px] w-full bg-gray-100 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  </div>
+                ) : pickupMapUrl ? (
+                  <div className="relative">
+                    <img
+                      src={pickupMapUrl || "/placeholder.svg"}
+                      alt="Map showing pickup location"
+                      className="w-full h-[300px] object-cover rounded-md"
+                    />
+                    <div className="absolute bottom-3 right-3">
+                      <Button asChild size="sm" className="bg-white text-black hover:bg-gray-100 shadow-md">
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(appointmentData.transportDetails.pickupAddress)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center"
+                        >
+                          <Navigation className="mr-2 h-4 w-4" />
+                          View on Map
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-[300px] w-full bg-gray-100 flex items-center justify-center">
+                    <p className="text-gray-500">Map preview not available</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          )}
+        </Tabs>
 
         {calendarResult && (
           <Alert

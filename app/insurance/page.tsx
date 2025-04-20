@@ -3,22 +3,19 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Search, AlertCircle, Loader2, MapPin } from "lucide-react"
+import { Search, AlertCircle, Loader2, MapPin, Phone, ExternalLink, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { MapView } from "@/components/insurance/map-view"
-import { AgentList } from "@/components/insurance/agent-list"
 import { AgentDetails } from "@/components/insurance/agent-details"
 import { useGeolocation } from "@/hooks/use-geolocation"
 import { findInsuranceAgents, geocodeAddress } from "@/app/actions/find-insurance-agents"
 import { AddressAutocomplete } from "@/components/address-autocomplete"
 import { PageHeader } from "@/components/page-header"
-import { loadGoogleMapsApi } from "@/utils/load-google-maps"
+import { Badge } from "@/components/ui/badge"
 
 export default function InsurancePage() {
   // State for search
@@ -34,29 +31,12 @@ export default function InsurancePage() {
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(undefined)
   const [selectedAgent, setSelectedAgent] = useState<any | null>(null)
   const [showAgentDetails, setShowAgentDetails] = useState(false)
-  const [activeView, setActiveView] = useState<"map" | "list">("map")
   const [searchRadius, setSearchRadius] = useState(5000) // 5km default
-  const [googleMapsAvailable, setGoogleMapsAvailable] = useState(true)
 
   // Geolocation
   const [isGettingLocation, setIsGettingLocation] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
   const { loading: geoLoading, error: geoError, location, getLocation } = useGeolocation()
-
-  // Add this useEffect right after your state declarations
-  useEffect(() => {
-    // Define the initMap function on the window object
-    window.initMap = () => {
-      // This is just a placeholder function
-      console.log("Maps API loaded successfully")
-    }
-
-    // Load the Google Maps API
-    loadGoogleMapsApi("initMap").catch((error) => {
-      console.error("Failed to load Google Maps:", error)
-      setGoogleMapsAvailable(false)
-    })
-  }, [])
 
   // Handle geolocation
   useEffect(() => {
@@ -162,31 +142,9 @@ export default function InsurancePage() {
     }
   }
 
-  // Common tab content style for consistency
-  const renderTabContent = (children: React.ReactNode) => (
-    <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">{children}</div>
-  )
-
-  // Handle view toggle when map fails to load
-  const handleViewToggle = (value: string) => {
-    if (value === "map" && window.googleMapsApiKeyMissing) {
-      // If trying to switch to map view but Google Maps API key is missing
-      setActiveView("list")
-      // Show a notification or alert here if needed
-    } else {
-      setActiveView(value as "map" | "list")
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 antialiased">
-      {/* Force list view if Google Maps API key is missing */}
-      {useEffect(() => {
-        if (window.googleMapsApiKeyMissing && activeView === "map") {
-          setActiveView("list")
-        }
-      }, [activeView])}
-      <PageHeader title="Insurance" showBackButton={true} />
+      <PageHeader title="Insurance" showBackButton={true} backUrl="/dashboard" />
       <div className="container max-w-6xl py-8 mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight">Find Health Insurance Agents</h1>
@@ -315,19 +273,6 @@ export default function InsurancePage() {
                   </p>
                 )}
               </div>
-
-              {insuranceAgents.length > 0 && (
-                <div className="flex items-center">
-                  <Tabs value={activeView} onValueChange={handleViewToggle} className="hidden sm:block">
-                    <TabsList>
-                      <TabsTrigger value="map" disabled={window.googleMapsApiKeyMissing}>
-                        Map View
-                      </TabsTrigger>
-                      <TabsTrigger value="list">List View</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-              )}
             </div>
 
             {insuranceAgents.length === 0 ? (
@@ -340,27 +285,120 @@ export default function InsurancePage() {
                 </AlertDescription>
               </Alert>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className={`md:col-span-2 ${activeView === "list" ? "hidden md:block" : ""}`}>
-                  {renderTabContent(
-                    <MapView
-                      agents={insuranceAgents}
-                      center={searchedLocation}
-                      onAgentSelect={handleAgentSelect}
-                      selectedAgentId={selectedAgentId}
-                    />,
-                  )}
-                </div>
+              <div className="space-y-4">
+                {insuranceAgents.map((agent) => (
+                  <Card key={agent.id} className="overflow-hidden">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col md:flex-row md:items-start gap-4">
+                        {agent.photoUrl && (
+                          <div className="flex-shrink-0">
+                            <img
+                              src={agent.photoUrl || "/placeholder.svg"}
+                              alt={agent.name}
+                              className="w-full md:w-32 h-32 object-cover rounded-md"
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h3 className="text-xl font-semibold mb-2">{agent.name}</h3>
 
-                <div className={`${activeView === "map" ? "hidden md:block" : ""}`}>
-                  {renderTabContent(
-                    <AgentList
-                      agents={insuranceAgents}
-                      onAgentSelect={handleAgentSelect}
-                      selectedAgentId={selectedAgentId}
-                    />,
-                  )}
-                </div>
+                          <div className="space-y-2 mb-4">
+                            <div className="flex items-start gap-2">
+                              <MapPin className="h-4 w-4 text-gray-500 mt-1" />
+                              <span className="text-gray-700">{agent.address}</span>
+                            </div>
+
+                            {agent.phoneNumber && (
+                              <div className="flex items-start gap-2">
+                                <Phone className="h-4 w-4 text-gray-500 mt-1" />
+                                <a href={`tel:${agent.phoneNumber}`} className="text-blue-600 hover:underline">
+                                  {agent.phoneNumber}
+                                </a>
+                              </div>
+                            )}
+
+                            {agent.rating !== undefined && (
+                              <div className="flex items-center">
+                                <div className="flex text-yellow-400">
+                                  {[...Array(Math.floor(agent.rating))].map((_, i) => (
+                                    <span key={i} className="text-yellow-400">
+                                      ★
+                                    </span>
+                                  ))}
+                                  {[...Array(5 - Math.floor(agent.rating))].map((_, i) => (
+                                    <span key={i} className="text-gray-300">
+                                      ★
+                                    </span>
+                                  ))}
+                                </div>
+                                <span className="ml-2 text-sm text-gray-600">
+                                  {agent.rating.toFixed(1)} ({agent.totalRatings || 0} reviews)
+                                </span>
+                              </div>
+                            )}
+
+                            {agent.openNow !== undefined && (
+                              <Badge
+                                variant="outline"
+                                className={
+                                  agent.openNow
+                                    ? "bg-green-100 text-green-800 border-green-200"
+                                    : "bg-red-100 text-red-800 border-red-200"
+                                }
+                              >
+                                {agent.openNow ? "Open Now" : "Closed"}
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <Button asChild size="sm" variant="outline">
+                              <a
+                                href={`https://www.google.com/maps/dir/?api=1&destination=${agent.location.lat},${agent.location.lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center"
+                              >
+                                <MapPin className="mr-2 h-4 w-4" />
+                                Get Directions
+                              </a>
+                            </Button>
+
+                            {agent.website && (
+                              <Button asChild size="sm" variant="outline">
+                                <a
+                                  href={agent.website}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center"
+                                >
+                                  <ExternalLink className="mr-2 h-4 w-4" />
+                                  Website
+                                </a>
+                              </Button>
+                            )}
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAgentSelect(agent)}
+                              className="flex items-center"
+                            >
+                              <Info className="mr-2 h-4 w-4" />
+                              More Details
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="text-right flex-shrink-0">
+                          <Badge className="mb-2 bg-blue-100 text-blue-800 border-blue-200">
+                            {agent.distance} mi away
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
           </div>

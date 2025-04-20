@@ -42,6 +42,8 @@ export default function ChatbotInterface() {
   const [isListening, setIsListening] = useState(false)
   const [voiceSupported, setVoiceSupported] = useState(true)
   const [voiceError, setVoiceError] = useState<string | null>(null)
+  const [transcript, setTranscript] = useState("")
+  const [isProcessingCommand, setIsProcessingCommand] = useState(false)
   const recognitionRef = useRef<any>(null)
 
   // Quick navigation links
@@ -66,32 +68,79 @@ export default function ChatbotInterface() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
 
       if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition()
-        const recognition = recognitionRef.current
+        try {
+          recognitionRef.current = new SpeechRecognition()
+          const recognition = recognitionRef.current
 
-        recognition.continuous = false
-        recognition.interimResults = false
-        recognition.lang = "en-US"
+          recognition.continuous = false
+          recognition.interimResults = true
+          recognition.lang = "en-US"
 
-        recognition.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript
-          setInput(transcript)
-          setIsListening(false)
+          recognition.onstart = () => {
+            setIsListening(true)
+            setVoiceError(null)
+          }
 
-          // Auto-submit after voice input
-          setTimeout(() => {
-            handleSendMessage(new Event("submit") as any, transcript)
-          }, 500)
-        }
+          recognition.onresult = (event: any) => {
+            const current = event.resultIndex
+            const currentTranscript = event.results[current][0].transcript
+            setTranscript(currentTranscript)
 
-        recognition.onerror = (event: any) => {
-          console.error("Speech recognition error", event.error)
-          setVoiceError(`Error: ${event.error}`)
-          setIsListening(false)
-        }
+            // If this is a final result
+            if (event.results[current].isFinal) {
+              setInput(currentTranscript)
 
-        recognition.onend = () => {
-          setIsListening(false)
+              // Auto-submit after voice input if it's a command
+              if (isCommandPhrase(currentTranscript)) {
+                setIsProcessingCommand(true)
+                setTimeout(() => {
+                  handleSendMessage(new Event("submit") as any, currentTranscript)
+                }, 500)
+              }
+            }
+          }
+
+          recognition.onerror = (event: any) => {
+            console.error("Speech recognition error", event.error)
+
+            // Handle specific error types
+            if (event.error === "aborted") {
+              setVoiceError("Speech recognition was aborted. Please try again.")
+            } else if (event.error === "not-allowed") {
+              setVoiceError("Microphone permission denied. Please allow microphone access to use voice input.")
+            } else if (event.error === "network") {
+              setVoiceError("Network error occurred. Please check your connection and try again.")
+            } else {
+              setVoiceError(`Error: ${event.error}`)
+            }
+
+            setIsListening(false)
+
+            // Ensure we clean up properly
+            if (recognitionRef.current) {
+              try {
+                recognitionRef.current.stop()
+              } catch (e) {
+                console.log("Error stopping recognition after error:", e)
+              }
+            }
+          }
+
+          recognition.onend = () => {
+            setIsListening(false)
+            setIsProcessingCommand(false)
+
+            // If we have a transcript but didn't process it as a command
+            if (transcript && !isProcessingCommand) {
+              setInput(transcript)
+            }
+
+            setTranscript("")
+          }
+        } catch (error) {
+          console.error("Error initializing speech recognition:", error)
+          setVoiceSupported(false)
+          setVoiceError("Failed to initialize speech recognition. This feature may not be supported in your browser.")
         }
       } else {
         setVoiceSupported(false)
@@ -100,10 +149,42 @@ export default function ChatbotInterface() {
 
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.abort()
+        try {
+          recognitionRef.current.abort()
+          recognitionRef.current.stop()
+        } catch (error) {
+          console.log("Error cleaning up speech recognition:", error)
+        }
       }
     }
-  }, [])
+  }, [transcript, isProcessingCommand])
+
+  // Check if the phrase is likely a command
+  const isCommandPhrase = (phrase: string): boolean => {
+    const commandPhrases = [
+      "go to",
+      "take me to",
+      "navigate to",
+      "open",
+      "show me",
+      "find",
+      "search for",
+      "dashboard",
+      "bills",
+      "appointments",
+      "insurance",
+      "transportation",
+      "settings",
+      "scan",
+      "bill",
+      "payment",
+      "schedule",
+      "appointment",
+    ]
+
+    const lowerPhrase = phrase.toLowerCase()
+    return commandPhrases.some((cmd) => lowerPhrase.includes(cmd))
+  }
 
   const handleSendMessage = async (e: React.FormEvent, voiceInput?: string) => {
     e.preventDefault()
@@ -121,6 +202,7 @@ export default function ChatbotInterface() {
     setMessages((prev) => [...prev, userMessage])
     setInput("")
     setIsLoading(true)
+    setIsProcessingCommand(false)
 
     try {
       // Process message with our chatbot model
@@ -140,6 +222,16 @@ export default function ChatbotInterface() {
 
       // If navigation is needed, redirect after a short delay
       if (navigationResult.shouldNavigate && navigationResult.destination) {
+        // Add a message indicating navigation
+        setMessages((prev) => [
+          ...prev,
+          {
+            content: `Navigating to ${navigationResult.destination}...`,
+            role: "assistant",
+            timestamp: new Date(),
+          },
+        ])
+
         setTimeout(() => {
           router.push(navigationResult.destination as string)
         }, 1500)
@@ -244,14 +336,27 @@ export default function ChatbotInterface() {
   const toggleVoiceInput = () => {
     if (isListening) {
       if (recognitionRef.current) {
-        recognitionRef.current.abort()
+        try {
+          recognitionRef.current.stop()
+        } catch (error) {
+          console.error("Error stopping speech recognition:", error)
+          // Force reset the listening state if stopping fails
+          setIsListening(false)
+          setTranscript("")
+        }
       }
       setIsListening(false)
+      setTranscript("")
     } else {
       setVoiceError(null)
       if (recognitionRef.current) {
-        recognitionRef.current.start()
-        setIsListening(true)
+        try {
+          recognitionRef.current.start()
+        } catch (error) {
+          console.error("Error starting speech recognition:", error)
+          setVoiceError("Failed to start speech recognition. Please try again or use text input instead.")
+          setIsListening(false)
+        }
       }
     }
   }
@@ -285,6 +390,22 @@ export default function ChatbotInterface() {
                 <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <p className="text-sm">Thinking...</p>
+                </div>
+              </div>
+            )}
+            {isListening && (
+              <div className="flex justify-start">
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg flex items-center gap-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-4 bg-blue-600 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-6 bg-blue-600 rounded-full animate-pulse delay-75"></div>
+                    <div className="w-2 h-8 bg-blue-600 rounded-full animate-pulse delay-150"></div>
+                    <div className="w-2 h-4 bg-blue-600 rounded-full animate-pulse delay-300"></div>
+                    <div className="w-2 h-5 bg-blue-600 rounded-full animate-pulse delay-450"></div>
+                  </div>
+                  <p className="text-sm text-blue-800 dark:text-blue-300">
+                    Listening... {transcript ? `"${transcript}"` : ""}
+                  </p>
                 </div>
               </div>
             )}
@@ -345,7 +466,7 @@ export default function ChatbotInterface() {
           <Button
             type="submit"
             size="icon"
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || (!input.trim() && !isListening)}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Send className="h-4 w-4" />

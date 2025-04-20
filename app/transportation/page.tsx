@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
+import { TransportationDetails } from "@/components/transportation/transportation-details"
 
 export default function TransportationPage() {
   const { toast } = useToast()
@@ -18,6 +19,7 @@ export default function TransportationPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [selectedTransportation, setSelectedTransportation] = useState<any | null>(null)
 
   // Load transportation logs
   useEffect(() => {
@@ -105,6 +107,11 @@ export default function TransportationPage() {
       default:
         return <Badge variant="outline">{status}</Badge>
     }
+  }
+
+  // Add this function to handle viewing transportation details
+  const handleViewDetails = (transportation: any) => {
+    setSelectedTransportation(transportation)
   }
 
   return (
@@ -258,6 +265,14 @@ export default function TransportationPage() {
                                 )}
                                 Cancel
                               </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleViewDetails(log)}
+                                className="ml-2"
+                              >
+                                View Details
+                              </Button>
                             </div>
                           )}
                         </div>
@@ -270,6 +285,16 @@ export default function TransportationPage() {
           </CardContent>
         </Card>
       </div>
+      {selectedTransportation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-3xl">
+            <TransportationDetails
+              transportation={selectedTransportation}
+              onClose={() => setSelectedTransportation(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -39,6 +39,7 @@ import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 // Import the debounce utility at the top of the file
 import { debounce } from "@/utils/debounce"
+import { geocodeAddress } from "@/app/actions/geocode-address"
 
 export default function AppointmentsPage() {
   const { toast } = useToast()
@@ -66,6 +67,8 @@ export default function AppointmentsPage() {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { location, loading: locationLoading, error: locationError } = useCurrentLocation()
   const [currentPage, setCurrentPage] = useState(1) // Pagination state
+  // Add a new state for appointment data
+  const [appointmentData, setAppointmentData] = useState<any>(null)
 
   // Memoize the clinic list to prevent unnecessary re-renders
   const memoizedClinics = useMemo(() => nearbyClinics, [nearbyClinics])
@@ -213,6 +216,7 @@ export default function AppointmentsPage() {
     }
   }
 
+  // Inside the handleSubmit function, update the geocoding to get coordinates for both locations
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (step === 1) {
@@ -236,6 +240,25 @@ export default function AppointmentsPage() {
           variant: "destructive",
         })
         return
+      }
+
+      // Get coordinates for the destination (clinic)
+      let destinationCoordinates = null
+      if (selectedClinic.location) {
+        destinationCoordinates = selectedClinic.location
+      }
+
+      // Get coordinates for the pickup address if transportation is needed
+      let pickupCoordinates = null
+      if (transportNeeded && pickupAddress) {
+        try {
+          const result = await geocodeAddress(pickupAddress)
+          if (result.success && result.data) {
+            pickupCoordinates = result.data.location
+          }
+        } catch (error) {
+          console.error("Error geocoding pickup address:", error)
+        }
       }
 
       // If transportation is needed, save the transportation data
@@ -296,6 +319,29 @@ export default function AppointmentsPage() {
 
       setAppointmentConfirmed(true)
       setStep(3)
+
+      // Pass the coordinates to the confirmation component
+      setAppointmentData({
+        date,
+        time,
+        appointmentType,
+        provider: selectedClinic.name,
+        location: selectedClinic.address || selectedClinic.vicinity,
+        destinationCoordinates,
+        transportNeeded,
+        transportDetails: transportNeeded
+          ? {
+              pickupAddress,
+              transportType:
+                transportType === "standard"
+                  ? "Standard (Car/Van)"
+                  : transportType === "wheelchair"
+                    ? "Wheelchair Accessible"
+                    : "Medical Transport",
+              pickupCoordinates,
+            }
+          : undefined,
+      })
     }
   }
 
@@ -329,6 +375,7 @@ export default function AppointmentsPage() {
   // Get the selected clinic
   const selectedClinic = nearbyClinics.find((clinic) => clinic.id === provider)
 
+  // Update the step 3 rendering to use the appointmentData state
   return (
     <div className="min-h-screen bg-gray-50 antialiased">
       <PageHeader title="Appointments" showBackButton={true} />
@@ -936,29 +983,8 @@ export default function AppointmentsPage() {
           </Card>
         )}
 
-        {step === 3 && appointmentConfirmed && selectedClinic && (
-          <AppointmentConfirmation
-            appointmentData={{
-              date,
-              time,
-              appointmentType,
-              provider: selectedClinic.name,
-              location: selectedClinic.address || selectedClinic.vicinity,
-              transportNeeded,
-              transportDetails: transportNeeded
-                ? {
-                    pickupAddress,
-                    transportType:
-                      transportType === "standard"
-                        ? "Standard (Car/Van)"
-                        : transportType === "wheelchair"
-                          ? "Wheelchair Accessible"
-                          : "Medical Transport",
-                  }
-                : undefined,
-            }}
-            onReset={resetAppointment}
-          />
+        {step === 3 && appointmentConfirmed && appointmentData && (
+          <AppointmentConfirmation appointmentData={appointmentData} onReset={resetAppointment} />
         )}
       </div>
     </div>
