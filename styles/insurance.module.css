@@ -1,0 +1,164 @@
+/* Insurance-specific styles */
+.insuranceContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.searchCard {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 2rem;
+}
+
+.searchHeader {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.searchTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: 0.5rem;
+}
+
+.searchDescription {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+.searchContent {
+  padding: 1.5rem;
+}
+
+.searchForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .searchForm {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+}
+
+.formGroup {
+  flex: 1;
+}
+
+.mapContainer {
+  height: 500px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.resultsList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .resultsList {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .resultsList {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.resultCard {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.resultCard:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+}
+
+.resultHeader {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.resultTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: 0.25rem;
+}
+
+.resultSubtitle {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+.resultContent {
+  padding: 1.25rem;
+}
+
+.resultInfo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.resultIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.75rem;
+  color: var(--primary);
+}
+
+.resultText {
+  font-size: 0.875rem;
+  color: var(--gray-700);
+}
+
+.resultFooter {
+  padding: 1rem 1.25rem;
+  background-color: var(--gray-50);
+  border-top: 1px solid var(--gray-200);
+  display: flex;
+  justify-content: space-between;
+}
+
+.tabsContainer {
+  display: flex;
+  border-bottom: 1px solid var(--gray-200);
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-500);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  color: var(--gray-700);
+}
+
+.tabActive {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}

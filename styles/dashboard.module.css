@@ -1,0 +1,164 @@
+/* Dashboard-specific styles */
+.dashboardContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .dashboardContainer {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboardContainer {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.statCard {
+  background-color: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+}
+
+.statCard:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+}
+
+.statIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.statTitle {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  margin-bottom: 0.5rem;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.recentActivity {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.activityHeader {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.activityTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.activityList {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.activityItem {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+}
+
+.activityItem:last-child {
+  border-bottom: none;
+}
+
+.activityIcon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.activityContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.activityName {
+  font-weight: 500;
+  color: var(--gray-800);
+  margin-bottom: 0.25rem;
+}
+
+.activityTime {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+}
+
+.healthMetrics {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  height: 100%;
+}
+
+.metricItem {
+  margin-bottom: 1.25rem;
+}
+
+.metricHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.metricName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.metricValue {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+.metricBar {
+  height: 0.5rem;
+  background-color: var(--gray-200);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.metricProgress {
+  height: 100%;
+  border-radius: 9999px;
+}

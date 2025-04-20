@@ -1,0 +1,263 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 15, 23, 42;
+  --background-rgb: 255, 255, 255;
+  --background-start-rgb: 248, 250, 252;
+  --background-end-rgb: 255, 255, 255;
+
+  /* Button colors */
+  --button-primary-bg: 37, 99, 235;
+  --button-primary-text: 255, 255, 255;
+  --button-primary-border: 29, 78, 216;
+
+  --button-secondary-bg: 226, 232, 240;
+  --button-secondary-text: 15, 23, 42;
+  --button-secondary-border: 203, 213, 225;
+
+  --button-destructive-bg: 239, 68, 68;
+  --button-destructive-text: 255, 255, 255;
+  --button-destructive-border: 220, 38, 38;
+
+  /* Card and UI colors */
+  --card-bg: 255, 255, 255;
+  --card-border: 226, 232, 240;
+  --card-text: 15, 23, 42;
+
+  /* Transition settings */
+  --transition-duration: 0.3s;
+
+  /* Sidebar variables */
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 222.2 47.4% 11.2%;
+  --sidebar-primary: 222.2 47.4% 11.2%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-accent: 210 40% 96.1%;
+  --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+  --sidebar-border: 214.3 31.8% 91.4%;
+  --sidebar-ring: 215 20.2% 65.1%;
+}
+
+.dark {
+  --foreground-rgb: 241, 245, 249;
+  --background-rgb: 15, 23, 42;
+  --background-start-rgb: 15, 23, 42;
+  --background-end-rgb: 30, 41, 59;
+
+  /* Button colors in dark mode */
+  --button-primary-bg: 59, 130, 246;
+  --button-primary-text: 255, 255, 255;
+  --button-primary-border: 37, 99, 235;
+
+  --button-secondary-bg: 51, 65, 85;
+  --button-secondary-text: 241, 245, 249;
+  --button-secondary-border: 71, 85, 105;
+
+  --button-destructive-bg: 220, 38, 38;
+  --button-destructive-text: 255, 255, 255;
+  --button-destructive-border: 185, 28, 28;
+
+  /* Card and UI colors */
+  --card-bg: 30, 41, 59;
+  --card-border: 51, 65, 85;
+  --card-text: 241, 245, 249;
+
+  --sidebar-background: 222.2 84% 4.9%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 210 40% 98%;
+  --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+  --sidebar-accent: 217.2 32.6% 17.5%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217.2 32.6% 17.5%;
+  --sidebar-ring: 224.3 76.3% 48%;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(to bottom, rgb(var(--background-start-rgb)), rgb(var(--background-end-rgb)));
+  transition: background var(--transition-duration) ease, color var(--transition-duration) ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* High contrast button styles */
+.btn-high-contrast {
+  border: 2px solid rgb(var(--button-primary-border));
+  box-shadow: 0 0 0 1px rgba(var(--button-primary-text), 0.1);
+  transition: all var(--transition-duration) ease;
+}
+
+.btn-high-contrast:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-high-contrast.btn-primary {
+  background-color: rgb(var(--button-primary-bg));
+  color: rgb(var(--button-primary-text));
+}
+
+.btn-high-contrast.btn-secondary {
+  background-color: rgb(var(--button-secondary-bg));
+  color: rgb(var(--button-secondary-text));
+}
+
+.btn-high-contrast.btn-destructive {
+  background-color: rgb(var(--button-destructive-bg));
+  color: rgb(var(--button-destructive-text));
+}
+
+/* Card styles */
+.card-high-contrast {
+  background-color: rgb(var(--card-bg));
+  border: 1px solid rgb(var(--card-border));
+  color: rgb(var(--card-text));
+  transition: all var(--transition-duration) ease;
+}
+
+/* Apple-style animations */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes reveal-width {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.5s ease-out forwards;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.5s ease-out forwards;
+}
+
+.animate-reveal-width {
+  animation: reveal-width 0.8s ease-out forwards;
+}
+
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+.delay-400 {
+  animation-delay: 400ms;
+}
+
+.delay-500 {
+  animation-delay: 500ms;
+}
+
+/* Parallax effect */
+.parallax {
+  transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.dark .glass {
+  background: rgba(17, 24, 39, 0.8);
+}
+
+/* Focus styles for better accessibility */
+:focus-visible {
+  outline: 2px solid rgb(var(--button-primary-bg));
+  outline-offset: 2px;
+}
+
+/* Ensure dropdown menus have solid backgrounds */
+.radix-dropdown-content,
+.radix-popover-content,
+.radix-select-content {
+  background-color: white !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.dark .radix-dropdown-content,
+.dark .radix-popover-content,
+.dark .radix-select-content {
+  background-color: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+
+/* Fix for any transparent backgrounds in dropdown menus */
+[data-radix-popper-content-wrapper] > div {
+  background-color: white !important;
+}
+
+.dark [data-radix-popper-content-wrapper] > div {
+  background-color: #1e293b !important;
+}

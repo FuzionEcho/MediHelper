@@ -1,0 +1,159 @@
+/* Transportation specific styles */
+.transportationContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.summaryCards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 640px) {
+  .summaryCards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .summaryCards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.summaryCard {
+  background-color: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summaryInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.summaryLabel {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  margin-bottom: 0.5rem;
+}
+
+.summaryValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.summaryIcon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ridesList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.rideCard {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border-left: 4px solid var(--primary);
+}
+
+.rideHeader {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rideTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.rideStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.statusScheduled {
+  background-color: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.statusCompleted {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.statusCanceled {
+  background-color: var(--danger-light);
+  color: var(--danger);
+}
+
+.rideContent {
+  padding: 1.25rem;
+}
+
+.rideDetail {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.rideIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.75rem;
+  color: var(--gray-500);
+  flex-shrink: 0;
+}
+
+.rideInfo {
+  flex: 1;
+}
+
+.rideLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-700);
+  margin-bottom: 0.25rem;
+}
+
+.rideValue {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+.rideFooter {
+  padding: 1rem 1.25rem;
+  background-color: var(--gray-50);
+  border-top: 1px solid var(--gray-200);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
